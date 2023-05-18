@@ -3,11 +3,13 @@ import sqlite3
 import pandas as pd
 
 # Verbindung zur SQLite-Datenbank herstellen
-conn = sqlite3.connect('counter_data.db')
-c = conn.cursor()
+conn1 = sqlite3.connect('counter_data.db')
+c1 = conn1.cursor()
+conn2 = sqlite3.connect('counter_total')
+c2 = conn2.cursor()
 
 # Tabelle erstellen, falls sie noch nicht existiert
-c.execute('''
+c1.execute('''
 CREATE TABLE IF NOT EXISTS counter_data (
     id INTEGER PRIMARY KEY,
     pils_count INTEGER,
@@ -16,7 +18,17 @@ CREATE TABLE IF NOT EXISTS counter_data (
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 ''')
-conn.commit()
+conn1.commit()
+c2.execute('''
+CREATE TABLE IF NOT EXISTS counter_total (
+    id INTEGER PRIMARY KEY,
+    pils_total INTEGER,
+    lemon_total INTEGER,
+    curuba_total INTEGER
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+''')
+conn2.commit()
 
 
 # Zentriere und vergrößere die Überschrift
@@ -80,8 +92,8 @@ with st.container():
     with col2:
         if st.button('Speichern und zurücksetzen'):
             # Werte in der Datenbank speichern
-            c.execute('INSERT INTO counter_data (pils_count, lemon_count, curuba_count) VALUES (?, ?, ?)', (st.session_state.pils_count, st.session_state.lemon_count, st.session_state.curuba_count))
-            conn.commit()
+            c1.execute('INSERT INTO counter_data (pils_count, lemon_count, curuba_count) VALUES (?, ?, ?)', (st.session_state.pils_count, st.session_state.lemon_count, st.session_state.curuba_count))
+            conn1.commit()
 
             # Counter und Delta zurücksetzen
             st.session_state.pils_count = 0
@@ -93,8 +105,8 @@ with st.container():
 
 
 # Daten aus der Datenbank abrufen und in einen DataFrame konvertieren
-c.execute("SELECT pils_count, lemon_count, curuba_count, timestamp FROM counter_data")
-data = c.fetchall()
+c1.execute("SELECT pils_count, lemon_count, curuba_count, timestamp FROM counter_data")
+data = c1.fetchall()
 columns = ["Pils", "V+ Lemon", "V+ Curuba", "Timestamp"]
 df = pd.DataFrame(data, columns=columns)
 
@@ -106,3 +118,21 @@ df_reversed = df[::-1]
 
 # DataFrame anzeigen
 st.dataframe(df_reversed)
+
+# Mit Summenfunktion die Spalten zusammenaddieren
+if st.button('Zusammenfassen'):
+    c1.execute("SELECT SUM(pils_count), SUM(lemon_count), SUM(curuba_count) FROM counter_data")
+    result = c1.fetchone()
+    pils_sum = result[0]
+    lemon_sum = result [1]
+    curuba_sum = result [2]
+    #Werte in die Datenbank einfügen
+    c2.execute('INSERT INTO counter_total (pils_total, lemon_total, curuba_total) VALUES (?, ?, ?)', (pils_sum, lemon_sum, curuba_sum))
+    conn2.commit()
+
+c2.execute("SELECT pils_total, lemon_total, curuba_total FROM counter_total")
+data_total = c2.fetchall()
+columns_total = ["Pils", "V+ Lemon", "V+ Curuba"]
+df_total = pd.DataFrame(data_total, columns=columns_total)
+df_total_reversed = df_total[::-1]
+st.dataframe(df_total_reversed)
