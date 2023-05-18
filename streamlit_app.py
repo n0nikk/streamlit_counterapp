@@ -5,7 +5,7 @@ import pandas as pd
 # Verbindung zur SQLite-Datenbank herstellen
 conn1 = sqlite3.connect('counter_data.db')
 c1 = conn1.cursor()
-conn2 = sqlite3.connect('counter_total')
+conn2 = sqlite3.connect('counter_total.db')
 c2 = conn2.cursor()
 
 # Tabelle erstellen, falls sie noch nicht existiert
