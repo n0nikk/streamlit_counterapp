@@ -5,8 +5,7 @@ import pandas as pd
 # Verbindung zur SQLite-Datenbank herstellen
 conn1 = sqlite3.connect('counter_data.db')
 c1 = conn1.cursor()
-conn2 = sqlite3.connect('counter_total.db')
-c2 = conn2.cursor()
+
 
 # Tabelle erstellen, falls sie noch nicht existiert
 c1.execute('''
@@ -19,16 +18,16 @@ CREATE TABLE IF NOT EXISTS counter_data (
 )
 ''')
 conn1.commit()
-c2.execute('''
+c1.execute('''
 CREATE TABLE IF NOT EXISTS counter_total (
     id INTEGER PRIMARY KEY,
     pils_total INTEGER,
     lemon_total INTEGER,
-    curuba_total INTEGER
+    curuba_total INTEGER,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 ''')
-conn2.commit()
+conn1.commit()
 
 
 # Zentriere und vergrößere die Überschrift
@@ -127,12 +126,13 @@ if st.button('Zusammenfassen'):
     lemon_sum = result [1]
     curuba_sum = result [2]
     #Werte in die Datenbank einfügen
-    c2.execute('INSERT INTO counter_total (pils_total, lemon_total, curuba_total) VALUES (?, ?, ?)', (pils_sum, lemon_sum, curuba_sum))
-    conn2.commit()
+    c1.execute('INSERT INTO counter_total (pils_total, lemon_total, curuba_total) VALUES (?, ?, ?)', (pils_sum, lemon_sum, curuba_sum))
+    conn1.commit()
 
-c2.execute("SELECT pils_total, lemon_total, curuba_total FROM counter_total")
-data_total = c2.fetchall()
-columns_total = ["Pils", "V+ Lemon", "V+ Curuba"]
+c1.execute("SELECT pils_total, lemon_total, curuba_total, timestamp FROM counter_total")
+data_total = c1.fetchall()
+columns_total = ["Pils", "V+ Lemon", "V+ Curuba", "Timestamp"]
 df_total = pd.DataFrame(data_total, columns=columns_total)
+df_total = df_total.set_index('Timestamp')
 df_total_reversed = df_total[::-1]
 st.dataframe(df_total_reversed)
